@@ -7,18 +7,26 @@ var router = express.Router();
 const { fileTypeFromBuffer } = require("file-type");
 const { saveToDatabase } = require("../services/file-service");
 
-
 const upload = multer({ storage: multer.memoryStorage() });
+
+router.get("/", function (req, res, next) {
+  return res.json({
+    message: "Welcome to gallery api",
+  });
+});
 
 /* GET home page. */
 router.post("/", upload.single("file"), async function (req, res, next) {
-   if (!req.file) {
-     return res.status(400).json({ message: "No file uploaded" });
-   }
-   try {
+  if (!req.file) {
+    return res.status(400).json({ message: "No file uploaded" });
+  }
+  try {
     const type = await fileTypeFromBuffer(req.file.buffer);
 
-    if (!type || !["image/jpeg", "image/png", "image/webp"].includes(type.mime)) {
+    if (
+      !type ||
+      !["image/jpeg", "image/png", "image/webp"].includes(type.mime)
+    ) {
       return res.status(400).json({ message: "Unsupported file type" });
     }
 
@@ -29,20 +37,22 @@ router.post("/", upload.single("file"), async function (req, res, next) {
       fs.mkdirSync(dir, { recursive: true });
     }
 
-    const filename = `${Date.now()}-${Math.round(Math.random() * 1e9)}.${type.ext}`;
+    const filename = `${Date.now()}-${Math.round(Math.random() * 1e9)}.${
+      type.ext
+    }`;
     const filepath = path.join(dir, filename);
 
     fs.writeFileSync(filepath, req.file.buffer);
 
     const url = `${process.env.HOST}/${folder}/${filename}`;
-     saveToDatabase({
-       name: filename,
-       url,
-       size: req.file.size,
-       extension: type.ext,
-       mime_type: type.mime,
-     });
-    
+    saveToDatabase({
+      name: filename,
+      url,
+      size: req.file.size,
+      extension: type.ext,
+      mime_type: type.mime,
+    });
+
     res.json({
       message: "File uploaded successfully",
       filename: filename,
@@ -51,8 +61,6 @@ router.post("/", upload.single("file"), async function (req, res, next) {
   } catch (error) {
     return res.status(400).json({ message: "File validation failed" });
   }
-
-  
 });
 
 router.delete("/", function (req, res) {
@@ -84,8 +92,5 @@ router.delete("/", function (req, res) {
     return res.status(500).json({ message: "Failed to delete file" });
   }
 });
-
-
-
 
 module.exports = router;
