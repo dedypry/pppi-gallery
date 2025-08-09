@@ -1,57 +1,57 @@
 require("dotenv/config");
 var express = require("express");
 const multer = require("multer");
-const path = require("path");
-const fs = require("fs");
 var router = express.Router();
-const { fileTypeFromBuffer } = require("file-type");
-const { saveToDatabase } = require("../services/file-service");
+const {
+  deleteFile,
+  saveFile,
+} = require("../services/file-service");
 
 const upload = multer({ storage: multer.memoryStorage() });
 
-router.get("/", function (req, res, next) {
+router.get("/", function (req, res) {
   return res.json({
     message: "Welcome to gallery api",
   });
 });
 
+router.post(
+  "/multiple",
+  upload.array("files", 50),
+  async function (req, res) {
+    const { folder } = req.query;
+    try {
+      if (!req.files.length)
+        return res.status(404).json({
+          message: "No File",
+        });
+
+      const urls = [];
+
+      for (const file of req.files) {
+        const { url } = await saveFile(file, folder);
+        urls.push(url);
+      }
+
+      res.json({
+        message: "File uploaded successfully",
+        urls,
+      });
+    } catch (error) {
+
+      console.error(error)
+      return res.status(400).json({ message: "File validation failed" });
+    }
+  }
+);
 /* GET home page. */
-router.post("/", upload.single("file"), async function (req, res, next) {
+router.post("/", upload.single("file"), async function (req, res) {
+  const { folder } = req.query;
   if (!req.file) {
     return res.status(400).json({ message: "No file uploaded" });
   }
   try {
-    const type = await fileTypeFromBuffer(req.file.buffer);
-
-    if (
-      !type ||
-      !["image/jpeg", "image/png", "image/webp"].includes(type.mime)
-    ) {
-      return res.status(400).json({ message: "Unsupported file type" });
-    }
-
-    const { folder } = req.query;
-    const dir = path.join(__dirname, "..", "public", folder || "");
-
-    if (!fs.existsSync(dir)) {
-      fs.mkdirSync(dir, { recursive: true });
-    }
-
-    const filename = `${Date.now()}-${Math.round(Math.random() * 1e9)}.${
-      type.ext
-    }`;
-    const filepath = path.join(dir, filename);
-
-    fs.writeFileSync(filepath, req.file.buffer);
-
-    const url = `${process.env.HOST}/${folder}/${filename}`;
-    saveToDatabase({
-      name: filename,
-      url,
-      size: req.file.size,
-      extension: type.ext,
-      mime_type: type.mime,
-    });
+    const {filename, url} = await saveFile(req.file, folder)
 
     res.json({
       message: "File uploaded successfully",
@@ -63,29 +63,20 @@ router.post("/", upload.single("file"), async function (req, res, next) {
   }
 });
 
-router.delete("/", function (req, res) {
-  const { url } = req.body;
-
-  if (!url) {
-    return res.status(400).json({ message: "URL is required" });
-  }
+router.delete("/", async function (req, res) {
+  const { url, urls } = req.body;
 
   try {
-    // Ambil path setelah domain, contoh: "/profile/user/namafile.png"
-    const parsedUrl = new URL(url);
-    const filePathRelative = parsedUrl.pathname; // contoh: /profile/user/xxx.png
-
-    // Gabungkan dengan public
-    const filePath = path.join(__dirname, "..", "public", filePathRelative);
-
-    // Cek apakah file ada
-    if (!fs.existsSync(filePath)) {
-      return res.status(404).json({ message: "File not found" });
+    if (url) {
+      await deleteFile(url);
     }
 
-    // Hapus file
-    fs.unlinkSync(filePath);
-
+    if (urls?.length > 0) {
+      for (const it of urls) {
+        await deleteFile(it);
+      }
+    }
+    console.log("SUCCESS")
     return res.json({ message: "File deleted successfully" });
   } catch (error) {
     console.error("Delete file error:", error);
