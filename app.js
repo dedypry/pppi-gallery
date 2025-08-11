@@ -22,24 +22,16 @@ app.use(cookieParser());
 app.use(express.static(path.join(__dirname, "public")));
 app.use(
   cors({
-    origin:
-      process.env.NODE_ENV === "production"
-        ? [
-            "https://dpn-pppi.org",
-            "https://admin.dpn-pppi.org",
-            "https://api.dpn-pppi.org",
-          ]
-        : "*",
+    origin: allowedOrigins,
   })
 );
 
 app.use((req, res, next) => {
+  const origin = req.headers.origin;
 
-  const origin = req.headers;
+  console.log("ORIGIN", origin, !origin, !allowedOrigins.includes(origin));
 
-  console.log("ORIGIN", origin)
-
-  if (!origin || !allowedOrigins.includes(origin)) {
+  if (!allowedOrigins.includes(origin)) {
     return res.status(403).json({ message: "Forbidden" });
   }
 
