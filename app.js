@@ -7,6 +7,7 @@ var logger = require("morgan");
 var cors = require("cors");
 
 var indexRouter = require("./routes/index");
+const { allowedOrigins } = require("./configs/cors");
 
 var app = express();
 
@@ -31,6 +32,19 @@ app.use(
         : "*",
   })
 );
+
+app.use((req, res, next) => {
+
+  const origin = req.headers;
+
+  console.log("ORIGIN", origin)
+
+  if (!origin || !allowedOrigins.includes(origin)) {
+    return res.status(403).json({ message: "Forbidden" });
+  }
+
+  next();
+});
 
 app.use("/", indexRouter);
 
