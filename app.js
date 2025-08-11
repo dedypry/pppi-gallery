@@ -29,7 +29,9 @@ app.use(
 app.use((req, res, next) => {
   const origin = req.headers.origin;
 
-  console.log("ORIGIN", origin, !origin, !allowedOrigins.includes(origin));
+  if (process.env.NODE_ENV !== "production") {
+    next();
+  }
 
   if (!allowedOrigins.includes(origin)) {
     return res.status(403).json({ message: "Forbidden" });
