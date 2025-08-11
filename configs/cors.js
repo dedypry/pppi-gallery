@@ -1,6 +1,6 @@
 require('dotenv/config')
 const allowedOrigins =
-  process.env.NODE_END === "production"
+  process.env.NODE_ENV === "production"
     ? [
         "https://dpn-pppi.org",
         "https://admin.dpn-pppi.org",
