@@ -2,10 +2,7 @@ require("dotenv/config");
 var express = require("express");
 const multer = require("multer");
 var router = express.Router();
-const {
-  deleteFile,
-  saveFile,
-} = require("../services/file-service");
+const { deleteFile, saveFile } = require("../services/file-service");
 
 const upload = multer({ storage: multer.memoryStorage() });
 
@@ -15,35 +12,30 @@ router.get("/", function (req, res) {
   });
 });
 
-router.post(
-  "/multiple",
-  upload.array("files", 50),
-  async function (req, res) {
-    const { folder } = req.query;
-    try {
-      if (!req.files.length)
-        return res.status(404).json({
-          message: "No File",
-        });
-
-      const urls = [];
-
-      for (const file of req.files) {
-        const { url } = await saveFile(file, folder);
-        urls.push(url);
-      }
-
-      res.json({
-        message: "File uploaded successfully",
-        urls,
+router.post("/multiple", upload.array("files", 50), async function (req, res) {
+  const { folder } = req.query;
+  try {
+    if (!req.files.length)
+      return res.status(404).json({
+        message: "No File",
       });
-    } catch (error) {
 
-      console.error(error)
-      return res.status(400).json({ message: "File validation failed" });
+    const urls = [];
+
+    for (const file of req.files) {
+      const { url } = await saveFile(file, folder);
+      urls.push(url);
     }
+
+    res.json({
+      message: "File uploaded successfully",
+      urls,
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(400).json({ message: "File validation failed" });
   }
-);
+});
 /* GET home page. */
 router.post("/", upload.single("file"), async function (req, res) {
   const { folder } = req.query;
@@ -51,7 +43,7 @@ router.post("/", upload.single("file"), async function (req, res) {
     return res.status(400).json({ message: "No file uploaded" });
   }
   try {
-    const {filename, url} = await saveFile(req.file, folder)
+    const { filename, url } = await saveFile(req.file, folder);
 
     res.json({
       message: "File uploaded successfully",
@@ -59,7 +51,9 @@ router.post("/", upload.single("file"), async function (req, res) {
       url,
     });
   } catch (error) {
-    return res.status(400).json({ message: "File validation failed" });
+    return res
+      .status(400)
+      .json({ message: error.message || "File validation failed" });
   }
 });
 
@@ -76,7 +70,7 @@ router.delete("/", async function (req, res) {
         await deleteFile(it);
       }
     }
-    console.log("SUCCESS")
+    console.log("SUCCESS");
     return res.json({ message: "File deleted successfully" });
   } catch (error) {
     console.error("Delete file error:", error);

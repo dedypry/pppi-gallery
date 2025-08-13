@@ -28,6 +28,7 @@ async function deleteFile(url) {
 
 async function saveFile(file, folder = "general") {
   try {
+    console.log("FILE ==> ",file)
     const type = await fileTypeFromBuffer(file.buffer);
 
     if (
