@@ -6,9 +6,9 @@ const UserModel = require("../models/users");
 const { fn } = require("objection");
 
 async function readNia() {
-  const users = await UserModel.query().whereNull("nia");
+  const users = await UserModel.query();
 
-  const userId = []
+  const userId = [];
 
   for (const user of users) {
     const filePath = path.join(__dirname, `./E-KTA/E-KTA_${user.name}.pdf`);
@@ -19,9 +19,8 @@ async function readNia() {
 
       const { nia } = result;
 
-      console.log(nia);
+      console.log("NIA PDF",nia, result, user.name);
       if (nia) {
-        
         try {
           await user.$query().update({
             nia,
@@ -29,30 +28,35 @@ async function readNia() {
             approved_at: fn.now(),
           });
         } catch (error) {
-            userId.push({
-                id: user.id,
-                nia: nia
-            })
+          userId.push({
+            id: user.id,
+            nia: nia,
+          });
         }
       }
     }
   }
 
-  if(userId.length){
-    const sort = getSort() + 1;
-
-    
+  if (userId.length) {
+    for (const item of userId) {
+      await createOnUniq(item.nia, item.id);
+    }
   }
 }
 
 async function createOnUniq(nia, id) {
-    const findUniq = await UserModel.query().findOne('nia', nia);
+  const findUniq = await UserModel.query().findOne("nia", nia);
 
-    if(findUniq){
-        const sort = getSort()
+  if (findUniq) {
+    const sort = await getSort();
 
-        nia = await createOnUniq()
-    }
+    nia = nia.split(".").slice(0, 3).join(".") + "." + sort;
+  }
+
+  await UserModel.query().findById(id).update({
+    nia,
+  });
+  console.log("SUCCESS", nia)
 }
 
 function extractNiaAndName(text) {
@@ -78,18 +82,16 @@ function extractNiaAndName(text) {
   };
 }
 
+async function getSort(plus = 1) {
+  const { max } = await UserModel.query().max("nia").first();
 
-async function getSort() {
-    const {max} = await UserModel.query().max('nia').first()
-
-    const split = max.split('.')
-    const sortNumber = Number(split[split.length - 1]);
-    console.log(sortNumber)
-    return {
-        
-        sortNumber
-    }
+  const split = max.split(".");
+  const sortNumber = Number(split[split.length - 1]) + plus;
+  const shortNia = split.slice(0, -1).join(".");
+  return String(sortNumber).padStart(4, "0");
 }
-// readNia();
+readNia();
 
-getSort()
+// getSort();
+
+// createOnUniq("30.23.26.00181", 1);
