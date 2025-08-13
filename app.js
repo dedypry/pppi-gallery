@@ -20,26 +20,21 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, "public")));
-app.use(
-  cors({
-    origin: allowedOrigins,
-  })
-);
+app.use(cors());
 
-app.use((req, res, next) => {
-  const origin = req.headers.origin;
+// app.use((req, res, next) => {
+//   const origin = req.headers.origin;
 
-  const production = process.env.NODE_ENV === "production";
+//   const production = process.env.NODE_ENV === "production";
 
-  console.log("PROD", production, )
+//   console.log("PROD", production, )
 
+//   if (production && !allowedOrigins.includes(origin)) {
+//     return res.status(403).json({ message: "Forbidden" });
+//   }
 
-  if (production && !allowedOrigins.includes(origin)) {
-    return res.status(403).json({ message: "Forbidden" });
-  }
-
-  next();
-});
+//   next();
+// });
 
 app.use("/", indexRouter);
 
