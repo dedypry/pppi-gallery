@@ -11,7 +11,7 @@ async function readNia() {
   const userId = [];
 
   for (const user of users) {
-    const filePath = path.join(__dirname, `./E-KTA/E-KTA_${user.name}.pdf`);
+    const filePath = path.join(__dirname, `./E-KTA/E-KTA_${user.name.toUpperCase()}.pdf`);
     if (fs.existsSync(filePath)) {
       const pdfBuffer = fs.readFileSync(filePath);
       const pdfData = await pdf(pdfBuffer);
