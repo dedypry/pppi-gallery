@@ -26,6 +26,7 @@ async function readNia() {
             nia,
             is_active: true,
             approved_at: fn.now(),
+            status: "approved"
           });
         } catch (error) {
           userId.push({
